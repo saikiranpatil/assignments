@@ -39,11 +39,155 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-  const express = require('express');
-  const bodyParser = require('body-parser');
-  
-  const app = express();
-  
-  app.use(bodyParser.json());
-  
-  module.exports = app;
+
+
+// // Method-1: stiring todos in memory
+// const express = require('express');
+// const bodyParser = require('body-parser');
+// const fs = require("fs");
+
+// const app = express();
+// const port = 3000;
+
+// app.use(bodyParser.json());
+
+// let todos = [];
+
+// app.get("/todos", (req, res) => {
+//   res.status(200).send(todos);
+// })
+
+// app.get("/todos/:id", (req, res) => {
+//   const id = req.params.id;
+//   const todo = todos.find((element) => element.id === parseInt(id));
+
+//   if (!todo) {
+//     res.status(404).send(`todo not found with id: ${id}`);
+//   }
+
+//   res.status(200).send(todo);
+// })
+
+// app.post("/todos", (req, res) => {
+
+//   const newId = new Date().valueOf();
+//   const newTodo = { id: newId, ...req.body };
+//   todos.push(newTodo);
+
+//   res.status(201).send({ id: newId });
+// })
+
+// app.put("/todos/:id", (req, res) => {
+//   const id = req.params.id;
+//   const todo = todos.find((element) => element.id === parseInt(id));
+
+//   if (!todo) {
+//     res.status(404).send(`todo not found with id: ${id}`);
+//   }
+
+//   const updatedTodo = { id, ...req.body };
+//   todos = todos.map((todo) => todo.id === parseInt(id) ? updatedTodo : todo);;
+
+//   res.status(200).send(updatedTodo);
+// })
+
+// app.delete("/todos/:id", (req, res) => {
+//   const id = req.params.id;
+//   const todo = todos.find((element) => element.id == id);
+
+//   if (!todo) {
+//     res.status(404).send(`todo not found with id: ${id}`);
+//   }
+
+//   todos = todos.filter((element) => element.id !== parseInt(id));
+//   res.status(200).send(`todo with id:${id} has been deleted sucessfully!`);
+// })
+
+// // app.listen(3000, () => {
+// //   console.log(`app listening at port http://localhost:${port}`);
+// // })
+
+// module.exports = app;
+
+
+// Method-2: stiring todos in file
+const express = require('express');
+const bodyParser = require('body-parser');
+const fs = require("fs");
+
+const app = express();
+const port = 3000;
+
+let todos = JSON.parse(fs.readFileSync("todos.json", "utf-8"));
+
+const writeTodos = (todos) => new Promise((resolve) => {
+  fs.writeFile("todos.json", JSON.stringify(todos), (err, data) => {
+    if (err) {
+      console.log(err);
+    }
+    resolve();
+  });
+});
+
+app.use(bodyParser.json());
+
+app.get("/todos", (req, res) => {
+  res.status(200).send(todos);
+})
+
+app.get("/todos/:id", (req, res) => {
+  const id = req.params.id;
+  const todo = todos.find((element) => element.id === parseInt(id));
+
+  if (!todo) {
+    res.status(404).send(`todo not found with id: ${id}`);
+  }
+
+  res.status(200).send(todo);
+})
+
+app.post("/todos", (req, res) => {
+  const newId = new Date().valueOf();
+  const newTodo = { id: newId, ...req.body };
+  todos.push(newTodo);
+
+  writeTodos(todos).then(() => {
+    res.status(201).send({ id: newId });
+  })
+})
+
+app.put("/todos/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const todo = todos.find((element) => element.id === parseInt(id));
+
+  if (!todo) {
+    res.status(404).send(`todo not found with id: ${id}`);
+  }
+
+  const updatedTodo = { id, ...req.body };
+  todos = todos.map((todo) => todo.id === parseInt(id) ? updatedTodo : todo);
+
+  writeTodos(todos).then(() => {
+    res.status(200).send(updatedTodo);
+  })
+})
+
+app.delete("/todos/:id", (req, res) => {
+  const id = req.params.id;
+  const todo = todos.find((element) => element.id === parseInt(id));
+
+  if (!todo) {
+    res.status(404).send(`todo not found with id: ${id}`);
+  }
+
+  todos = todos.filter((element) => element.id !== parseInt(id));
+  writeTodos(todos).then(() => {
+    res.status(200).send(`todo with id:${id} has been deleted sucessfully!`);
+  });
+})
+
+// app.listen(3000, () => {
+//   console.log(`app listening at port http://localhost:${port}`);
+// })
+
+module.exports = app;

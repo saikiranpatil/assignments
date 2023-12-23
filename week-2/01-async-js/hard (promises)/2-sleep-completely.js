@@ -5,6 +5,12 @@
  */
 
 function sleep(milliseconds) {
+    let promise = new Promise((resolve) => {
+        setTimeout(()=>{
+            resolve();
+        }, milliseconds);
+    });
+    return promise;
 }
 
 module.exports = sleep;
