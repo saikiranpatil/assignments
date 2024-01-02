@@ -12,6 +12,23 @@ const app = express();
 // clears every one second
 
 let numberOfRequestsForUser = {};
+
+app.use((req, res, next)=>{
+  const userId = req.header["user-id"];
+
+  if(!numberOfRequestsForUser[userId]){
+    numberOfRequestsForUser[userId]=0;
+  }
+
+  if(numberOfRequestsForUser[userId]>5){
+    res.status(404).send("Server Request Rate Exceeded");
+  }
+
+  numberOfRequestsForUser[userId]++;
+  next();
+})
+
+// clear all the request counts of all users after 1 seconds
 setInterval(() => {
     numberOfRequestsForUser = {};
 }, 1000)
