@@ -7,16 +7,57 @@
     let todoState = [];
     let oldTodoState = [];
 
-    function addTodoToDom() {
-      
+    function updateTodoClick(id) {
+      const button = document.getElementById(id).querySelector("button");
+      button.innerHTML = button.innerHTML === "Done" ? "Mark as Done" : "Done"
+    }
+
+    function addTodoToDom(todo) {
+      console.log(`Added todo with id ${todo.id}`);
+
+      const todos = document.getElementById("todos");
+
+      const todoContainer = document.createElement("div");
+      todoContainer.setAttribute("id", todo.id);
+
+      const title = document.createElement("div");
+      title.setAttribute("id", todo.id + "title");
+      title.innerHTML = todo.title;
+
+      const description = document.createElement("div");
+      description.setAttribute("id", todo.id + "description");
+      description.innerHTML = todo.description;
+
+      const button = document.createElement("button");
+      button.innerHTML = "Mark as Done";
+      button.setAttribute("onClick", `updateTodoClick(${todo.id})`);
+
+      todoContainer.appendChild(title);
+      todoContainer.appendChild(description);
+      todoContainer.appendChild(button);
+
+      todos.appendChild(todoContainer);
     }
 
     function removeTodoFromDom(todo) {
-      
+      console.log(`Deleted todo with id ${todo.id}`);
+
+      document.getElementById(todo.id).remove();
     }
 
-    function updateTodoInDom(oldTodo, newTodo) {
-        
+    function updateTodoInDom(todo) {
+      console.log(`Updated todo with id ${todo.id}`);
+
+      element.getElementById(todo.id + "title").innerHTML = todo.title;
+      element.getElementById(todo.id + "description").innerHTML = todo.description;
+    }
+
+    function areBothTodoSame(todo1, todo2) {
+      if (Object.keys(todo1).length !== Object.keys(todo2).length) {
+        return false;
+      }
+
+      return Object.keys(todo1).every(key => todo2.hasOwnProperty(key) && todo2[key] === todo1[key]);
     }
 
     function updateState(newTodos) {
@@ -31,7 +72,39 @@
       // calculate these 3 arrays
       // call addTodo, removeTodo, updateTodo functions on each of the
       // elements
-      oldTodoState = newTodos;
+
+      const old_todos = {};
+      const new_todos = {};
+      const all_todos = {};
+
+      oldTodoState.forEach(oldTodo => {
+        old_todos[oldTodo.id] = oldTodo;
+        all_todos[oldTodo.id] = (all_todos[oldTodo.id] ?? 0) + 1;
+      });
+
+      newTodos.forEach(newTodo => {
+        new_todos[newTodo.id] = newTodo;
+        all_todos[newTodo.id] = (all_todos[newTodo.id] ?? 0) - 1;
+      });
+
+      for (const key in all_todos) {
+        if (all_todos[key] > 0) {
+          deleted.push(old_todos[key]);
+        } else if (all_todos[key] < 0) {
+          added.push(new_todos[key]);
+        } else if (!areBothTodoSame(old_todos[key], new_todos[key])) {
+          updated.push(new_todos[key]);
+        }
+      }
+
+      // add todo
+      added.forEach(todo => addTodoToDom(todo));
+      // delete todo
+      deleted.forEach(todo => removeTodoFromDom(todo));
+      // update todo
+      updated.forEach(todo => updateTodoInDom(todo));
+
+      oldTodoState = [...newTodos];
     }
 
     function addTodo() {
@@ -44,6 +117,15 @@
       })
       updateState(todoState);
     }
+
+    async function getRandomTodos() {
+      const res = await fetch("https://sum-server.100xdevs.com/todos");
+      const json = await res.json();
+
+      todoState = json.todos;
+      console.log(json.todos);
+      updateState(todoState);
+    }
   </script>
 </head>
 
@@ -51,6 +133,7 @@
   <input type="text" id="title" placeholder="Todo title"></input> <br /><br />
   <input type="text" id="description" placeholder="Todo description"></input> <br /><br />
   <button onclick="addTodo()">Add todo</button>
+  <button onclick="getRandomTodos()">Get Random Todos</button>
   <br /> <br />
 
   <div id="todos">
